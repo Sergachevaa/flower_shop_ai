@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+
+{% block title %}Добавить товар{% endblock %}
+
+{% block content %}
+<div class="form-wrapper">
+    <h2>Добавить товар</h2>
+
+    <form method="post" enctype="multipart/form-data" class="custom-form">
+        {% csrf_token %}
+        <input type="text" name="name" placeholder="Название товара">
+        <input type="text" name="description" placeholder="Описание">
+        <input type="number" step="0.01" name="price" placeholder="Цена">
+        <input type="file" name="image">
+        <input type="number" name="stock" placeholder="Количество на складе">
+        <button type="submit">Добавить</button>
+    </form>
+</div>
+{% endblock %}

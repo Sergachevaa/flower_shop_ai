@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Корзина{% endblock %}
+
+{% block content %}
+<div class="form-wrapper">
+    <h2>Корзина</h2>
+
+    {% if cart_items %}
+        <div class="cart-list">
+            {% for item in cart_items %}
+                <div class="cart-item">
+                    <div>
+                        <h3>{{ item.1 }}</h3>
+                        <p>Цена: {{ item.2 }} ₽</p>
+                        <p>Количество: {{ item.3 }}</p>
+                        <p><strong>Сумма: {{ item.5 }} ₽</strong></p>
+                    </div>
+
+                    {% if item.4 %}
+                        <img src="{% static 'images/' %}{{ item.4 }}" alt="{{ item.1 }}" class="cart-image">
+                    {% endif %}
+
+                    <a href="/remove-from-cart/{{ item.0 }}/" class="delete-btn">Удалить</a>
+                </div>
+            {% endfor %}
+        </div>
+
+        <h3>Итого: {{ total_sum }} ₽</h3>
+    {% else %}
+        <p>Корзина пуста.</p>
+    {% endif %}
+</div>
+{% endblock %}
