@@ -6,13 +6,17 @@
 <div class="form-wrapper">
     <h2>Редактировать товар</h2>
 
-    <form method="post" class="custom-form">
+    <form method="post" enctype="multipart/form-data" class="custom-form">
         {% csrf_token %}
-        <input type="text" name="name" value="{{ product.1 }}" placeholder="Название товара">
-        <input type="text" name="description" value="{{ product.2 }}" placeholder="Описание">
-        <input type="number" step="0.01" name="price" value="{{ product.3 }}" placeholder="Цена">
-        <input type="text" name="image" value="{{ product.4 }}" placeholder="Название картинки">
-        <input type="number" name="stock" value="{{ product.5 }}" placeholder="Количество на складе">
+
+        <input type="text" name="name" value="{{ product.1 }}" placeholder="Название товара" required>
+        <input type="text" name="description" value="{{ product.2 }}" placeholder="Описание" required>
+        <input type="number" step="0.01" name="price" value="{{ product.3 }}" placeholder="Цена" required>
+
+        <input type="file" name="image" accept="image/*">
+
+        <input type="number" name="stock" value="{{ product.5 }}" placeholder="Количество на складе" required>
+
         <button type="submit">Сохранить изменения</button>
     </form>
 </div>
