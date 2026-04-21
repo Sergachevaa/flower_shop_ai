@@ -312,7 +312,7 @@ section p {
 
 .cart-item p {
     font-size: 20px;
-    margin: 8px 0;
+    margin: 20px 0;
 }
 
 .cart-image {
@@ -348,10 +348,36 @@ section p {
     .cart-item p,
     section p {
         font-size: 18px;
-    }
+    }.cart-total {
+    margin-top: 25px;
+    text-align: center;
+}
+
+.cart-total h3 {
+    font-size: 30px;
+    color: #3f1f2b;
+}
+
+.delete-btn {
+    display: inline-block;
+    margin-top: 18px;
+    padding: 12px 10px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #d95b87, #c94773);
+    color: white;
+    text-decoration: none;
+    font-size: 18px;
+    font-weight: bold;
+    transition: 0.2s;
+}
+
+.delete-btn:hover {
+    transform: translateY(-3px);
+}
 
     .cart-item {
         flex-direction: column;
         text-align: center;
     }
 }
+

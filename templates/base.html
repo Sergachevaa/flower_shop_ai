@@ -10,6 +10,7 @@
 
 <header>
     <h1>Цветочный магазин</h1>
+
     <nav>
         <a href="/">Главная</a>
         <a href="/catalog/">Каталог</a>
@@ -24,24 +25,23 @@
     </nav>
 
     {% if request.user.is_authenticated %}
-        <p class="user-info">
-            Вы вошли как: <strong>{{ request.user.username }}</strong>
-        </p>
+        <div class="user-info">
+            <p>Вы вошли как: <strong>{{ request.user.username }}</strong></p>
+        </div>
     {% endif %}
 </header>
 
-{% if messages %}
-    <div class="messages-container">
+<main>
+    {% if messages %}
         {% for message in messages %}
             <div class="message {{ message.tags }}">
                 {{ message }}
             </div>
         {% endfor %}
-    </div>
-{% endif %}
+    {% endif %}
 
-<main>
-    {% block content %}{% endblock %}
+    {% block content %}
+    {% endblock %}
 </main>
 
 </body>
