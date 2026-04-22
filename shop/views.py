@@ -62,29 +62,40 @@ def home(request):
 
 def catalog(request):
     role = get_user_role(request.user)
+    filter_type = request.GET.get('type', 'all')
+
+    base_query = """
+        SELECT 
+            p.id,
+            p.name,
+            p.description,
+            p.price,
+            p.image,
+            p.stock,
+            c.name AS category_name,
+            p.is_bouquet
+        FROM products p
+        LEFT JOIN categories c ON p.category_id = c.id
+    """
+
+    params = []
+
+    if filter_type == 'bouquets':
+        base_query += " WHERE p.is_bouquet = TRUE"
+    elif filter_type == 'single':
+        base_query += " WHERE p.is_bouquet = FALSE"
+
+    base_query += " ORDER BY p.id"
 
     with connection.cursor() as cursor:
-        cursor.execute("""
-            SELECT 
-                p.id,
-                p.name,
-                p.description,
-                p.price,
-                p.image,
-                p.stock,
-                c.name AS category_name,
-                p.is_bouquet
-            FROM products p
-            LEFT JOIN categories c ON p.category_id = c.id
-            ORDER BY p.id
-        """)
+        cursor.execute(base_query, params)
         products = cursor.fetchall()
 
     return render(request, 'shop/catalog.html', {
         'products': products,
-        'role': role
+        'role': role,
+        'active_filter': filter_type
     })
-
 
 def add_product(request):
     if not request.user.is_authenticated:

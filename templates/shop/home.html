@@ -1,20 +1,108 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}Главная{% endblock %}
 
 {% block content %}
-<section>
-    <h2>Добро пожаловать в цветочный магазин</h2>
-    <p>
-        Здесь вы сможете выбрать красивые букеты, оформить заказ,
-        собрать корзину и воспользоваться распознаванием цветов с помощью нейросети YOLO.
-    </p>
+<section class="hero">
+    <div class="hero-content">
+        <div class="hero-text">
+            <p class="hero-subtitle">Современный цветочный магазин</p>
+            <h1>Букеты, цветы и композиции с эстетикой и заботой</h1>
+            <p class="hero-description">
+                Собираем стильные букеты, оформляем подарочные композиции и доставляем цветы точно ко времени.
+                Красиво, аккуратно и с любовью к деталям.
+            </p>
+
+            <div class="hero-actions">
+                <a href="/catalog/" class="hero-btn">Смотреть каталог</a>
+                <a href="#collections" class="hero-btn secondary">Наши коллекции</a>
+            </div>
+        </div>
+
+        <div class="hero-image-block">
+            <img src="{% static 'images/bouquet.jpg' %}" alt="Букет" class="hero-image">
+        </div>
+    </div>
 </section>
 
-<h3>Пользователи в базе:</h3>
-<ul>
-    {% for user in users %}
-        <li>{{ user.0 }}</li>
-    {% endfor %}
-</ul>
+<section class="collections-section" id="collections">
+    <div class="section-heading">
+        <h2>Коллекции для любого повода</h2>
+    </div>
+
+    <div class="collections-grid">
+        <a href="/catalog/?type=bouquets" class="collection-card large">
+            <div class="collection-text">
+                <h3>Готовые букеты</h3>
+                <p>Собранные композиции для подарка, свидания, праздника и особого случая.</p>
+            </div>
+            <img src="{% static 'images/bouquet.jpg' %}" alt="Готовые букеты">
+        </a>
+
+        <a href="/catalog/?type=single" class="collection-card">
+            <div class="collection-text">
+                <h3>Поштучные цветы</h3>
+                <p>Розы, тюльпаны, хризантемы и другие цветы для индивидуального выбора.</p>
+            </div>
+            <img src="{% static 'images/rose.jpg' %}" alt="Поштучные цветы">
+        </a>
+
+        <a href="/catalog/" class="collection-card">
+            <div class="collection-text">
+                <h3>Весь ассортимент</h3>
+                <p>Перейди в каталог и выбери всё, что доступно прямо сейчас.</p>
+            </div>
+            <img src="{% static 'images/tulip.jpg' %}" alt="Каталог">
+        </a>
+    </div>
+</section>
+
+<section class="advantages-section">
+    <div class="section-heading">
+        <p class="section-subtitle">Почему выбирают нас</p>
+        <h2>Уютный сервис и современный стиль</h2>
+    </div>
+
+    <div class="advantages-grid">
+        <div class="advantage-card">
+            <h3>Свежие цветы</h3>
+            <p>Тщательно следим за качеством поставок и внешним видом каждой позиции.</p>
+        </div>
+        <div class="advantage-card">
+            <h3>Быстрая доставка</h3>
+            <p>Собираем и отправляем заказы максимально быстро в удобный для клиента интервал.</p>
+        </div>
+        <div class="advantage-card">
+            <h3>Эстетичная упаковка</h3>
+            <p>Каждый букет оформляется аккуратно и современно — как для витрины и фото.</p>
+        </div>
+    </div>
+</section>
+
+<section class="contact-section">
+    <div class="section-heading">
+        <p class="section-subtitle">Связь с нами</p>
+        <h2>Контактная информация</h2>
+    </div>
+
+    <div class="contact-grid">
+        <div class="contact-card">
+            <h3>Телефон</h3>
+            <p>+7 (900) 304-54-48</p>
+        </div>
+        <div class="contact-card">
+            <h3>Адрес</h3>
+            <p>г. Воронеж, ул. Ворошилова, 15</p>
+        </div>
+        <div class="contact-card">
+            <h3>Время работы</h3>
+            <p>Ежедневно с 09:00 до 21:00</p>
+        </div>
+        <div class="contact-card">
+            <h3>Соцсети</h3>
+            <p>Telegram / WhatsApp / Instagram</p>
+        </div>
+    </div>
+</section>
 {% endblock %}
