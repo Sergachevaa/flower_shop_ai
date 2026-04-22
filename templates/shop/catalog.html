@@ -4,74 +4,53 @@
 {% block title %}Каталог{% endblock %}
 
 {% block content %}
-<section class="catalog-page">
-    <div class="catalog-top">
-        <h2>Каталог товаров</h2>
 
-        {% if request.user.is_authenticated and role == 'owner' or role == 'admin' %}
+<div class="catalog-header">
+    <h2>Каталог товаров</h2>
+
+    {% if request.user.is_authenticated %}
+        {% if role == 'owner' or role == 'admin' %}
             <a href="/add-product/" class="add-product-btn" title="Добавить товар">+</a>
         {% endif %}
-    </div>
+    {% endif %}
+</div>
 
-    <div class="catalog-controls">
-        <div class="catalog-filters">
-            <a href="/catalog/{% if search_query %}?q={{ search_query }}{% endif %}" class="{% if active_filter == 'all' %}active{% endif %}">Все товары</a>
-            <a href="/catalog/?type=bouquets{% if search_query %}&q={{ search_query }}{% endif %}" class="{% if active_filter == 'bouquets' %}active{% endif %}">Букеты</a>
-            <a href="/catalog/?type=single{% if search_query %}&q={{ search_query }}{% endif %}" class="{% if active_filter == 'single' %}active{% endif %}">Поштучный товар</a>
-        </div>
+<div class="catalog-grid">
+    {% for product in products %}
+        <div class="product-card">
 
-        <form method="get" class="catalog-search-form">
-            {% if active_filter != 'all' %}
-                <input type="hidden" name="type" value="{{ active_filter }}">
+            <h3>{{ product.1 }}</h3>
+            <p>{{ product.2 }}</p>
+            <p><strong>Цена:</strong> {{ product.3 }} ₽</p>
+            <p><strong>Остаток:</strong> {{ product.5 }}</p>
+
+            {% if product.4 %}
+                {% if product.4|slice:":9" == "products/" %}
+                    <img src="/media/{{ product.4 }}" alt="{{ product.1 }}">
+                {% else %}
+                    <img src="{% static 'images/' %}{{ product.4 }}" alt="{{ product.1 }}">
+                {% endif %}
             {% endif %}
 
-            <input type="text" name="q" placeholder="Поиск товаров..." value="{{ search_query }}">
-            <button type="submit" class="search-btn">Найти</button>
-        </form>
-    </div>
+            <form method="post" action="/add-to-cart/">
+                {% csrf_token %}
+                <input type="hidden" name="product_id" value="{{ product.0 }}">
+                <button type="submit" class="cart-btn">В корзину</button>
+            </form>
 
-    {% if products %}
-        <div class="catalog-grid">
-            {% for product in products %}
-                <div class="product-card">
-                    <div class="product-image-wrap">
-                        {% if product.4 %}
-                            {% if 'products/' in product.4 %}
-                                <img src="/media/{{ product.4 }}" alt="{{ product.1 }}" class="product-image">
-                            {% else %}
-                                <img src="{% static 'images/' %}{{ product.4 }}" alt="{{ product.1 }}" class="product-image">
-                            {% endif %}
-                        {% endif %}
+            {% if request.user.is_authenticated %}
+                {% if role == 'owner' or role == 'admin' %}
+                    <div class="product-actions">
+                        <a href="/edit-product/{{ product.0 }}/" class="edit-btn">Редактировать</a>
+                        <a href="/delete-product/{{ product.0 }}/" class="delete-btn">Удалить</a>
                     </div>
+                {% endif %}
+            {% endif %}
 
-                    <div class="product-body">
-                        <span class="product-badge">
-                            {% if product.7 %}Букет{% else %}Поштучно{% endif %}
-                        </span>
-
-                        <h3>{{ product.1 }}</h3>
-                        <p class="product-description">{{ product.2 }}</p>
-                        <p><strong>Цена:</strong> {{ product.3 }} ₽</p>
-                        <p><strong>Остаток:</strong> {{ product.5 }}</p>
-
-                        <form method="post" action="/add-to-cart/">
-                            {% csrf_token %}
-                            <input type="hidden" name="product_id" value="{{ product.0 }}">
-                            <button type="submit" class="cart-btn">В корзину</button>
-                        </form>
-
-                        {% if request.user.is_authenticated and role == 'owner' or role == 'admin' %}
-                            <div class="product-actions">
-                                <a href="/edit-product/{{ product.0 }}/" class="edit-btn">Редактировать</a>
-                                <a href="/delete-product/{{ product.0 }}/" class="delete-btn">Удалить</a>
-                            </div>
-                        {% endif %}
-                    </div>
-                </div>
-            {% endfor %}
         </div>
-    {% else %}
-        <p class="empty-text">По выбранному фильтру или запросу товаров пока нет.</p>
-    {% endif %}
-</section>
+    {% empty %}
+        <p>Товаров пока нет.</p>
+    {% endfor %}
+</div>
+
 {% endblock %}
