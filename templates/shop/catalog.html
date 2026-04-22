@@ -6,20 +6,28 @@
 {% block content %}
 <section class="catalog-page">
     <div class="catalog-top">
-        <div>
-            <p class="section-subtitle">Ассортимент</p>
-            <h2>Каталог товаров</h2>
-        </div>
+        <h2>Каталог товаров</h2>
 
         {% if request.user.is_authenticated and role == 'owner' or role == 'admin' %}
             <a href="/add-product/" class="add-product-btn" title="Добавить товар">+</a>
         {% endif %}
     </div>
 
-    <div class="catalog-filters">
-        <a href="/catalog/" class="{% if active_filter == 'all' %}active{% endif %}">Все товары</a>
-        <a href="/catalog/?type=bouquets" class="{% if active_filter == 'bouquets' %}active{% endif %}">Букеты</a>
-        <a href="/catalog/?type=single" class="{% if active_filter == 'single' %}active{% endif %}">Поштучный товар</a>
+    <div class="catalog-controls">
+        <div class="catalog-filters">
+            <a href="/catalog/{% if search_query %}?q={{ search_query }}{% endif %}" class="{% if active_filter == 'all' %}active{% endif %}">Все товары</a>
+            <a href="/catalog/?type=bouquets{% if search_query %}&q={{ search_query }}{% endif %}" class="{% if active_filter == 'bouquets' %}active{% endif %}">Букеты</a>
+            <a href="/catalog/?type=single{% if search_query %}&q={{ search_query }}{% endif %}" class="{% if active_filter == 'single' %}active{% endif %}">Поштучный товар</a>
+        </div>
+
+        <form method="get" class="catalog-search-form">
+            {% if active_filter != 'all' %}
+                <input type="hidden" name="type" value="{{ active_filter }}">
+            {% endif %}
+
+            <input type="text" name="q" placeholder="Поиск товаров..." value="{{ search_query }}">
+            <button type="submit" class="search-btn">Найти</button>
+        </form>
     </div>
 
     {% if products %}
@@ -63,7 +71,7 @@
             {% endfor %}
         </div>
     {% else %}
-        <p class="empty-text">По выбранному фильтру товаров пока нет.</p>
+        <p class="empty-text">По выбранному фильтру или запросу товаров пока нет.</p>
     {% endif %}
 </section>
 {% endblock %}

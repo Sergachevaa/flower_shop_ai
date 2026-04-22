@@ -63,8 +63,9 @@ def home(request):
 def catalog(request):
     role = get_user_role(request.user)
     filter_type = request.GET.get('type', 'all')
+    search_query = request.GET.get('q', '').strip()
 
-    base_query = """
+    query = """
         SELECT 
             p.id,
             p.name,
@@ -76,25 +77,36 @@ def catalog(request):
             p.is_bouquet
         FROM products p
         LEFT JOIN categories c ON p.category_id = c.id
+        WHERE 1=1
     """
-
     params = []
 
     if filter_type == 'bouquets':
-        base_query += " WHERE p.is_bouquet = TRUE"
+        query += " AND p.is_bouquet = TRUE"
     elif filter_type == 'single':
-        base_query += " WHERE p.is_bouquet = FALSE"
+        query += " AND p.is_bouquet = FALSE"
 
-    base_query += " ORDER BY p.id"
+    if search_query:
+        query += """
+            AND (
+                p.name ILIKE %s
+                OR p.description ILIKE %s
+            )
+        """
+        search_pattern = f"%{search_query}%"
+        params.extend([search_pattern, search_pattern])
+
+    query += " ORDER BY p.id"
 
     with connection.cursor() as cursor:
-        cursor.execute(base_query, params)
+        cursor.execute(query, params)
         products = cursor.fetchall()
 
     return render(request, 'shop/catalog.html', {
         'products': products,
         'role': role,
-        'active_filter': filter_type
+        'active_filter': filter_type,
+        'search_query': search_query
     })
 
 def add_product(request):
