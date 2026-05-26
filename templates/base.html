@@ -5,11 +5,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Цветочный магазин{% endblock %}</title>
+
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
 </head>
 <body>
 
 <header class="site-header">
+
     <div class="topbar">
         <div>Телефон: +7 (900) 302-54-48</div>
         <div>Доставка по городу ежедневно</div>
@@ -17,80 +19,166 @@
     </div>
 
     <div class="main-header">
+
         <div class="logo-block">
             <a href="/" class="logo">Цветочный магазин</a>
         </div>
 
         <nav class="main-nav">
-            <a href="/" class="nav-link-pill">Главная</a>
+
+            <a href="/" class="nav-link-pill">
+                Главная
+            </a>
 
             <div class="nav-dropdown">
-                <a href="/catalog/" class="nav-link-pill">Каталог</a>
+
+                <a href="/catalog/" class="nav-link-pill">
+                    Каталог
+                </a>
+
                 <div class="nav-dropdown-menu">
-                    <a href="/catalog/?type=bouquets">Готовые букеты</a>
-                    <a href="/catalog/?type=single">Поштучный товар</a>
-                    <a href="/catalog/">Коллекции</a>
+
+                    <a href="/catalog/?type=bouquets">
+                        Готовые букеты
+                    </a>
+
+                    <a href="/catalog/?type=single">
+                        Поштучный товар
+                    </a>
+
+                    <a href="/catalog/">
+                        Коллекции
+                    </a>
+
                 </div>
+
             </div>
 
-            <a href="#contacts" class="nav-link-pill">Контакты</a>
+            <!-- AI КНОПКА -->
+            <a href="/ai-recognition/" class="nav-link-pill">
+                AI Поиск
+            </a>
+
+            <a href="#contacts" class="nav-link-pill">
+                Контакты
+            </a>
 
             <div class="nav-dropdown">
-                <a href="#" class="nav-link-pill">Мой аккаунт</a>
+
+                <a href="#" class="nav-link-pill">
+                    Мой аккаунт
+                </a>
+
                 <div class="nav-dropdown-menu nav-dropdown-menu-right">
+
                     {% if request.user.is_authenticated %}
-                        <div class="account-name">{{ request.user.username }}</div>
-                        <a href="/cart/">Корзина</a>
-                        <a href="/users/logout/">Выход</a>
+
+                        <div class="account-name">
+                            {{ request.user.username }}
+                        </div>
+
+                        <a href="/cart/">
+                            Корзина
+                        </a>
+
+                        <a href="/users/logout/">
+                            Выход
+                        </a>
+
                     {% else %}
-                        <a href="/users/login/">Вход</a>
-                        <a href="/users/register/">Регистрация</a>
+
+                        <a href="/users/login/">
+                            Вход
+                        </a>
+
+                        <a href="/users/register/">
+                            Регистрация
+                        </a>
+
                     {% endif %}
+
                 </div>
+
             </div>
+
         </nav>
+
     </div>
+
 </header>
 
 {% if messages %}
+
     <div class="messages-wrap">
+
         {% for message in messages %}
+
             <div class="message {{ message.tags }}">
                 {{ message }}
             </div>
+
         {% endfor %}
+
     </div>
+
 {% endif %}
 
 <main>
-    {% block content %}{% endblock %}
+
+    {% block content %}
+    {% endblock %}
+
 </main>
 
 {% if request.user.is_authenticated %}
-<a href="/cart/" class="floating-cart" title="Корзина">🛒</a>
+
+    <a href="/cart/" class="floating-cart" title="Корзина">
+        🛒
+    </a>
+
 {% endif %}
 
 <footer class="site-footer" id="contacts">
+
     <div class="footer-grid">
+
         <div>
+
             <h3>Цветочный магазин</h3>
-            <p>Авторские букеты, поштучные цветы и подарочные композиции с нежной современной подачей.</p>
+
+            <p>
+                Авторские букеты, поштучные цветы и подарочные
+                композиции с нежной современной подачей.
+            </p>
+
         </div>
 
         <div>
+
             <h4>Контакты</h4>
+
             <p>Телефон: +7 (900) 302-54-48</p>
+
             <p>Email: flowershop@mail.ru</p>
+
             <p>Telegram: @flowershop</p>
+
         </div>
 
         <div>
+
             <h4>Адрес и график</h4>
+
             <p>г. Москва, ул. Цветочная, 15</p>
+
             <p>Ежедневно: 09:00 – 21:00</p>
+
             <p>Доставка в день заказа</p>
+
         </div>
+
     </div>
+
 </footer>
 
 </body>

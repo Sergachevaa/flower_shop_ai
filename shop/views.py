@@ -2,6 +2,7 @@ from django.contrib import messages
 from django.db import connection, transaction
 from django.shortcuts import render, redirect
 from django.conf import settings
+from media.upload.ai.predict import predict_flower
 import os
 
 
@@ -406,3 +407,103 @@ def delete_product(request, product_id):
         messages.error(request, 'Ошибка при удалении товара')
 
     return redirect('catalog')
+
+def ai_recognition(request):
+    result = None
+    products = []
+
+    flower_translate = {
+        'rose': 'роза',
+        'tulip': 'тюльпан',
+        'chrysanthemum': 'хризантема',
+    }
+
+    flower_info = {
+        'rose': 'Роза — классический цветок, который часто используется в романтических букетах и подарочных композициях.',
+        'tulip': 'Тюльпан — нежный весенний цветок, подходящий для лёгких и свежих композиций.',
+        'chrysanthemum': 'Хризантема — стойкий декоративный цветок, который хорошо подходит для сборных букетов.',
+    }
+
+    if request.method == 'POST':
+        image = request.FILES.get('image')
+
+        if image:
+            upload_path = os.path.join(
+                settings.MEDIA_ROOT,
+                'uploads',
+                image.name
+            )
+
+            os.makedirs(
+                os.path.dirname(upload_path),
+                exist_ok=True
+            )
+
+            with open(upload_path, 'wb+') as destination:
+                for chunk in image.chunks():
+                    destination.write(chunk)
+
+            prediction = predict_flower(upload_path)
+
+            flower_name_en = prediction['flower']
+            flower_name_ru = flower_translate.get(flower_name_en, flower_name_en)
+
+            result = {
+                'flower_en': flower_name_en,
+                'flower_ru': flower_name_ru,
+                'confidence': prediction['confidence'],
+                'info': flower_info.get(
+                    flower_name_en,
+                    'Система определила цветок и подобрала похожие товары из каталога.'
+                )
+            }
+
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    SELECT DISTINCT
+                        p.id,
+                        p.name,
+                        p.description,
+                        p.price,
+                        p.image,
+                        p.stock
+                    FROM products p
+                    LEFT JOIN product_flowers pf ON pf.product_id = p.id
+                    LEFT JOIN flowers f ON f.id = pf.flower_id
+                    WHERE
+                        LOWER(p.name) LIKE LOWER(%s)
+                        OR LOWER(p.description) LIKE LOWER(%s)
+                        OR LOWER(f.name_ru) LIKE LOWER(%s)
+                        OR LOWER(f.name_en) LIKE LOWER(%s)
+                    ORDER BY p.id
+                """, [
+                    f'%{flower_name_ru}%',
+                    f'%{flower_name_ru}%',
+                    f'%{flower_name_ru}%',
+                    f'%{flower_name_en}%'
+                ])
+
+                products = cursor.fetchall()
+
+            if not products:
+                with connection.cursor() as cursor:
+                    cursor.execute("""
+                        SELECT
+                            id,
+                            name,
+                            description,
+                            price,
+                            image,
+                            stock
+                        FROM products
+                        WHERE is_bouquet = TRUE
+                        ORDER BY id
+                        LIMIT 6
+                    """)
+
+                    products = cursor.fetchall()
+
+    return render(request, 'shop/ai_recognition.html', {
+        'result': result,
+        'products': products
+    })
