@@ -9,6 +9,7 @@
     <form method="post" class="custom-form">
         {% csrf_token %}
         <input type="text" name="username" placeholder="Логин">
+        <input type="email" name="email" placeholder="Email" required>
         <input type="password" name="password" placeholder="Пароль">
         <button type="submit">Зарегистрироваться</button>
     </form>

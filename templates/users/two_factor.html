@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block title %}Подтверждение входа{% endblock %}
+
+{% block content %}
+
+<div class="form-wrapper">
+    <h2>Двухфакторная аутентификация</h2>
+
+    <p>
+        На вашу электронную почту отправлен код подтверждения.
+    </p>
+
+    <form method="post" class="custom-form">
+
+        {% csrf_token %}
+
+        <input
+            type="text"
+            name="code"
+            placeholder="Введите код"
+            required
+        >
+
+        <button type="submit">
+            Подтвердить вход
+        </button>
+
+    </form>
+</div>
+
+{% endblock %}
