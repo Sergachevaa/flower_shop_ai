@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}AI Распознавание{% endblock %}
+
+{% block content %}
+
+<section class="form-wrapper">
+
+    <h2>AI Распознавание цветов</h2>
+
+    <form method="post" enctype="multipart/form-data" class="custom-form">
+
+        {% csrf_token %}
+
+        <input type="file" name="image" required>
+
+        <button type="submit">
+            Определить цветок
+        </button>
+
+    </form>
+
+</section>
+
+{% if result %}
+
+<section class="form-wrapper">
+
+    <h2>Результат распознавания</h2>
+
+    <p>
+        <strong>Цветок:</strong>
+        {{ result.flower_ru }}
+        {{ result.info }}
+    </p>
+
+    <p>
+        <strong>Точность:</strong>
+        {{ result.confidence }}%
+    </p>
+
+</section>
+
+{% endif %}
+
+{% if products %}
+
+<section class="catalog-page">
+
+    <div class="catalog-top">
+        <h2>Подходящие товары</h2>
+    </div>
+
+    <div class="catalog-grid">
+
+        {% for product in products %}
+
+            <div class="product-card">
+
+                <div class="product-image-wrap">
+
+                    {% if product.4 %}
+
+                        {% if 'products/' in product.4 %}
+                            <img src="/media/{{ product.4 }}"
+                                 class="product-image">
+                        {% else %}
+                            <img src="{% static 'images/' %}{{ product.4 }}"
+                                 class="product-image">
+                        {% endif %}
+
+                    {% endif %}
+
+                </div>
+
+                <div class="product-body">
+
+                    <h3>{{ product.1 }}</h3>
+
+                    <p class="product-description">
+                        {{ product.2 }}
+                    </p>
+
+                    <p>
+                        <strong>Цена:</strong>
+                        {{ product.3 }} ₽
+                    </p>
+
+                </div>
+
+            </div>
+
+        {% endfor %}
+
+    </div>
+
+</section>
+
+{% endif %}
+
+{% endblock %}

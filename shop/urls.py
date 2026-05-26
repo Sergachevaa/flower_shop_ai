@@ -8,6 +8,7 @@ from .views import (
     remove_from_cart,
     edit_product,
     delete_product,
+    ai_recognition,
 )
 
 urlpatterns = [
@@ -19,4 +20,5 @@ urlpatterns = [
     path('remove-from-cart/<int:cart_id>/', remove_from_cart, name='remove_from_cart'),
     path('edit-product/<int:product_id>/', edit_product, name='edit_product'),
     path('delete-product/<int:product_id>/', delete_product, name='delete_product'),
+    path('ai-recognition/', ai_recognition, name='ai_recognition'),
 ]
