@@ -412,16 +412,10 @@ def ai_recognition(request):
     result = None
     products = []
 
-    flower_translate = {
-        'rose': 'роза',
-        'tulip': 'тюльпан',
-        'chrysanthemum': 'хризантема',
-    }
-
     flower_info = {
-        'rose': 'Роза — классический цветок, который часто используется в романтических букетах и подарочных композициях.',
-        'tulip': 'Тюльпан — нежный весенний цветок, подходящий для лёгких и свежих композиций.',
-        'chrysanthemum': 'Хризантема — стойкий декоративный цветок, который хорошо подходит для сборных букетов.',
+        'rose': 'Роза — классический цветок для романтических букетов и подарочных композиций.',
+        'tulip': 'Тюльпан — нежный весенний цветок для лёгких сезонных букетов.',
+        'chrysanthemum': 'Хризантема — стойкий декоративный цветок для сборных композиций.',
     }
 
     if request.method == 'POST':
@@ -446,38 +440,56 @@ def ai_recognition(request):
             prediction = predict_flower(upload_path)
 
             flower_name_en = prediction['flower']
-            flower_name_ru = flower_translate.get(flower_name_en, flower_name_en)
-
-            result = {
-                'flower_en': flower_name_en,
-                'flower_ru': flower_name_ru,
-                'confidence': prediction['confidence'],
-                'info': flower_info.get(
-                    flower_name_en,
-                    'Система определила цветок и подобрала похожие товары из каталога.'
-                )
-            }
 
             with connection.cursor() as cursor:
                 cursor.execute("""
                     SELECT
                         id,
-                        name,
-                        description,
-                        price,
-                        image,
-                        stock
-                    FROM products
-                    WHERE
-                        LOWER(name) LIKE LOWER(%s)
-                        OR LOWER(description) LIKE LOWER(%s)
-                    ORDER BY id
-                """, [
-                    f'%{flower_name_ru}%',
-                    f'%{flower_name_ru}%'
-                ])
+                        name_ru,
+                        short_info
+                    FROM flowers
+                    WHERE name_en = %s
+                    LIMIT 1
+                """, [flower_name_en])
 
-                products = cursor.fetchall()
+                flower_row = cursor.fetchone()
+
+            if flower_row:
+                flower_id = flower_row[0]
+                flower_name_ru = flower_row[1]
+                short_info = flower_row[2]
+            else:
+                flower_id = None
+                flower_name_ru = flower_name_en
+                short_info = flower_info.get(
+                    flower_name_en,
+                    'Система определила цветок и подобрала похожие товары из каталога.'
+                )
+
+            result = {
+                'flower_en': flower_name_en,
+                'flower_ru': flower_name_ru,
+                'confidence': prediction['confidence'],
+                'info': short_info
+            }
+
+            if flower_id:
+                with connection.cursor() as cursor:
+                    cursor.execute("""
+                        SELECT DISTINCT
+                            p.id,
+                            p.name,
+                            p.description,
+                            p.price,
+                            p.image,
+                            p.stock
+                        FROM products p
+                        JOIN product_flowers pf ON pf.product_id = p.id
+                        WHERE pf.flower_id = %s
+                        ORDER BY p.id
+                    """, [flower_id])
+
+                    products = cursor.fetchall()
 
             if not products:
                 with connection.cursor() as cursor:
@@ -490,10 +502,14 @@ def ai_recognition(request):
                             image,
                             stock
                         FROM products
-                        WHERE is_bouquet = TRUE
+                        WHERE
+                            LOWER(name) LIKE LOWER(%s)
+                            OR LOWER(description) LIKE LOWER(%s)
                         ORDER BY id
-                        LIMIT 6
-                    """)
+                    """, [
+                        f'%{flower_name_ru}%',
+                        f'%{flower_name_ru}%'
+                    ])
 
                     products = cursor.fetchall()
 
