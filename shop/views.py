@@ -460,27 +460,21 @@ def ai_recognition(request):
 
             with connection.cursor() as cursor:
                 cursor.execute("""
-                    SELECT DISTINCT
-                        p.id,
-                        p.name,
-                        p.description,
-                        p.price,
-                        p.image,
-                        p.stock
-                    FROM products p
-                    LEFT JOIN product_flowers pf ON pf.product_id = p.id
-                    LEFT JOIN flowers f ON f.id = pf.flower_id
+                    SELECT
+                        id,
+                        name,
+                        description,
+                        price,
+                        image,
+                        stock
+                    FROM products
                     WHERE
-                        LOWER(p.name) LIKE LOWER(%s)
-                        OR LOWER(p.description) LIKE LOWER(%s)
-                        OR LOWER(f.name_ru) LIKE LOWER(%s)
-                        OR LOWER(f.name_en) LIKE LOWER(%s)
-                    ORDER BY p.id
+                        LOWER(name) LIKE LOWER(%s)
+                        OR LOWER(description) LIKE LOWER(%s)
+                    ORDER BY id
                 """, [
                     f'%{flower_name_ru}%',
-                    f'%{flower_name_ru}%',
-                    f'%{flower_name_ru}%',
-                    f'%{flower_name_en}%'
+                    f'%{flower_name_ru}%'
                 ])
 
                 products = cursor.fetchall()
