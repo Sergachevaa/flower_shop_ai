@@ -3,7 +3,10 @@ from django.db import connection, transaction
 from django.shortcuts import render, redirect
 from django.conf import settings
 from media.upload.ai.predict import predict_flower
+
 import os
+import smtplib
+from email.mime.text import MIMEText
 
 
 def get_user_role(user):
@@ -51,6 +54,42 @@ def save_uploaded_file(uploaded_file):
             destination.write(chunk)
 
     return f'products/{uploaded_file.name}'
+
+
+def send_order_email(order_id, customer_name, phone, address, comment, cart_items, total_sum):
+    order_text = f"""
+Новый заказ №{order_id}
+
+Покупатель: {customer_name}
+Телефон: {phone}
+Адрес доставки: {address}
+Комментарий: {comment if comment else 'Без комментария'}
+
+Товары:
+"""
+
+    for item in cart_items:
+        order_text += f"""
+- {item[2]}
+  Цена: {item[3]} ₽
+  Количество: {item[4]}
+  Сумма: {item[5]} ₽
+"""
+
+    order_text += f"""
+
+Итого: {total_sum} ₽
+"""
+
+    msg = MIMEText(order_text, 'plain', 'utf-8')
+    msg['Subject'] = f'Новый заказ №{order_id}'
+    msg['From'] = settings.EMAIL_HOST_USER
+    msg['To'] = settings.EMAIL_HOST_USER
+
+    with smtplib.SMTP(settings.EMAIL_HOST, settings.EMAIL_PORT, timeout=10) as server:
+        server.starttls()
+        server.login(settings.EMAIL_HOST_USER, settings.EMAIL_HOST_PASSWORD)
+        server.send_message(msg)
 
 
 def home(request):
@@ -110,6 +149,7 @@ def catalog(request):
         'search_query': search_query
     })
 
+
 def add_product(request):
     if not request.user.is_authenticated:
         messages.error(request, 'Сначала войдите в систему')
@@ -142,14 +182,16 @@ def add_product(request):
 
             with connection.cursor() as cursor:
                 cursor.execute("""
-                    INSERT INTO products (name, description, price, image, stock, category_id, is_bouquet)
+                    INSERT INTO products 
+                    (name, description, price, image, stock, category_id, is_bouquet)
                     VALUES (%s, %s, %s, %s, %s, %s, %s)
                 """, [name, description, price, image_name, stock, category_id, is_bouquet])
 
             messages.success(request, 'Товар успешно добавлен')
             return redirect('catalog')
 
-        except Exception:
+        except Exception as e:
+            print('ADD PRODUCT ERROR:', e)
             messages.error(request, 'Ошибка при добавлении товара')
 
     return render(request, 'shop/add_product.html', {'categories': categories})
@@ -213,7 +255,8 @@ def add_to_cart(request):
                 """, [product_id])
 
         messages.success(request, 'Товар добавлен в корзину')
-    except Exception:
+    except Exception as e:
+        print('ADD TO CART ERROR:', e)
         messages.error(request, 'Ошибка при добавлении товара в корзину')
 
     return redirect('catalog')
@@ -303,10 +346,135 @@ def remove_from_cart(request, cart_id):
                     """, [cart_id])
 
         messages.success(request, 'Количество товара в корзине уменьшено')
-    except Exception:
+    except Exception as e:
+        print('REMOVE FROM CART ERROR:', e)
         messages.error(request, 'Ошибка при удалении товара из корзины')
 
     return redirect('cart')
+
+
+def checkout(request):
+    if not request.user.is_authenticated:
+        messages.error(request, 'Сначала войдите в систему')
+        return redirect('login')
+
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            SELECT id
+            FROM carts
+            WHERE user_id = %s
+            ORDER BY id DESC
+            LIMIT 1
+        """, [request.user.id])
+        cart_row = cursor.fetchone()
+
+    if not cart_row:
+        messages.error(request, 'Корзина пуста')
+        return redirect('cart')
+
+    cart_id = cart_row[0]
+
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            SELECT
+                ci.id,
+                p.id,
+                p.name,
+                p.price,
+                ci.quantity,
+                (p.price * ci.quantity) AS total_price
+            FROM cart_items ci
+            JOIN products p ON p.id = ci.product_id
+            WHERE ci.cart_id = %s
+            ORDER BY ci.id
+        """, [cart_id])
+        cart_items = cursor.fetchall()
+
+    if not cart_items:
+        messages.error(request, 'Корзина пуста')
+        return redirect('cart')
+
+    total_sum = sum(item[5] for item in cart_items)
+
+    if request.method == 'POST':
+        customer_name = request.POST.get('customer_name', '').strip()
+        phone = request.POST.get('phone', '').strip()
+        address = request.POST.get('address', '').strip()
+        comment = request.POST.get('comment', '').strip()
+
+        if not customer_name or not phone or not address:
+            messages.error(request, 'Заполните имя, телефон и адрес доставки')
+            return render(request, 'shop/checkout.html', {
+                'cart_items': cart_items,
+                'total_sum': total_sum
+            })
+
+        try:
+            with transaction.atomic():
+                with connection.cursor() as cursor:
+                    cursor.execute("""
+                        INSERT INTO orders
+                        (
+                            user_id,
+                            total_price,
+                            status,
+                            customer_name,
+                            phone,
+                            address,
+                            comment
+                        )
+                        VALUES (%s, %s, %s, %s, %s, %s, %s)
+                        RETURNING id
+                    """, [
+                        request.user.id,
+                        total_sum,
+                        'Новый заказ',
+                        customer_name,
+                        phone,
+                        address,
+                        comment
+                    ])
+
+                    order_id = cursor.fetchone()[0]
+
+                    for item in cart_items:
+                        product_id = item[1]
+                        price = item[3]
+                        quantity = item[4]
+
+                        cursor.execute("""
+                            INSERT INTO order_items
+                            (order_id, product_id, quantity, price)
+                            VALUES (%s, %s, %s, %s)
+                        """, [order_id, product_id, quantity, price])
+
+                    cursor.execute("""
+                        DELETE FROM cart_items
+                        WHERE cart_id = %s
+                    """, [cart_id])
+
+            send_order_email(
+                order_id,
+                customer_name,
+                phone,
+                address,
+                comment,
+                cart_items,
+                total_sum
+            )
+
+            messages.success(request, 'Заказ успешно оформлен. Данные отправлены администратору.')
+            return redirect('home')
+
+        except Exception as e:
+            print('CHECKOUT ERROR:', e)
+            messages.error(request, 'Ошибка при оформлении заказа')
+            return redirect('checkout')
+
+    return render(request, 'shop/checkout.html', {
+        'cart_items': cart_items,
+        'total_sum': total_sum
+    })
 
 
 def edit_product(request, product_id):
@@ -366,7 +534,8 @@ def edit_product(request, product_id):
             messages.success(request, 'Товар успешно обновлён')
             return redirect('catalog')
 
-        except Exception:
+        except Exception as e:
+            print('EDIT PRODUCT ERROR:', e)
             messages.error(request, 'Ошибка при редактировании товара')
             return redirect(f'/edit-product/{product_id}/')
 
@@ -403,35 +572,28 @@ def delete_product(request, product_id):
             cursor.execute("DELETE FROM products WHERE id = %s", [product_id])
 
         messages.success(request, 'Товар успешно удалён')
-    except Exception:
+    except Exception as e:
+        print('DELETE PRODUCT ERROR:', e)
         messages.error(request, 'Ошибка при удалении товара')
 
     return redirect('catalog')
 
+
 def ai_recognition(request):
     result = None
     products = []
+    no_products_message = None
 
-    flower_info = {
-        'rose': 'Роза — классический цветок для романтических букетов и подарочных композиций.',
-        'tulip': 'Тюльпан — нежный весенний цветок для лёгких сезонных букетов.',
-        'chrysanthemum': 'Хризантема — стойкий декоративный цветок для сборных композиций.',
-    }
+    MIN_CONFIDENCE = 80
 
     if request.method == 'POST':
         image = request.FILES.get('image')
 
         if image:
-            upload_path = os.path.join(
-                settings.MEDIA_ROOT,
-                'uploads',
-                image.name
-            )
+            upload_dir = os.path.join(settings.MEDIA_ROOT, 'uploads')
+            os.makedirs(upload_dir, exist_ok=True)
 
-            os.makedirs(
-                os.path.dirname(upload_path),
-                exist_ok=True
-            )
+            upload_path = os.path.join(upload_dir, image.name)
 
             with open(upload_path, 'wb+') as destination:
                 for chunk in image.chunks():
@@ -439,14 +601,45 @@ def ai_recognition(request):
 
             prediction = predict_flower(upload_path)
 
-            flower_name_en = prediction['flower']
+            flower_name_en = prediction['flower'].strip().lower()
+            flower_name_en = flower_name_en.replace(' ', '_').replace('-', '_')
+            confidence = prediction['confidence']
+
+            flower_aliases = {
+                'calla': 'calla_lily',
+                'calla_lily': 'calla_lily',
+                'calla_lilly': 'calla_lily',
+                'protea': 'protea',
+                'rose': 'rose',
+                'tulip': 'tulip',
+                'daisy': 'daisy',
+                'chrysanthemum': 'chrysanthemum',
+            }
+
+            flower_name_en = flower_aliases.get(flower_name_en, flower_name_en)
+
+            print("AI FLOWER:", flower_name_en)
+            print("AI CONFIDENCE:", confidence)
+
+            if confidence < MIN_CONFIDENCE:
+                result = {
+                    'flower_en': flower_name_en,
+                    'flower_ru': 'неизвестный цветок',
+                    'confidence': confidence,
+                    'info': 'Данного цветка нет в нашем магазине.'
+                }
+
+                no_products_message = 'Данного цветка нет в нашем магазине.'
+
+                return render(request, 'shop/ai_recognition.html', {
+                    'result': result,
+                    'products': products,
+                    'no_products_message': no_products_message
+                })
 
             with connection.cursor() as cursor:
                 cursor.execute("""
-                    SELECT
-                        id,
-                        name_ru,
-                        short_info
+                    SELECT id, name_ru, short_info
                     FROM flowers
                     WHERE name_en = %s
                     LIMIT 1
@@ -458,22 +651,14 @@ def ai_recognition(request):
                 flower_id = flower_row[0]
                 flower_name_ru = flower_row[1]
                 short_info = flower_row[2]
-            else:
-                flower_id = None
-                flower_name_ru = flower_name_en
-                short_info = flower_info.get(
-                    flower_name_en,
-                    'Система определила цветок и подобрала похожие товары из каталога.'
-                )
 
-            result = {
-                'flower_en': flower_name_en,
-                'flower_ru': flower_name_ru,
-                'confidence': prediction['confidence'],
-                'info': short_info
-            }
+                result = {
+                    'flower_en': flower_name_en,
+                    'flower_ru': flower_name_ru,
+                    'confidence': confidence,
+                    'info': short_info
+                }
 
-            if flower_id:
                 with connection.cursor() as cursor:
                     cursor.execute("""
                         SELECT DISTINCT
@@ -482,38 +667,31 @@ def ai_recognition(request):
                             p.description,
                             p.price,
                             p.image,
-                            p.stock
+                            p.stock,
+                            p.is_bouquet
                         FROM products p
                         JOIN product_flowers pf ON pf.product_id = p.id
                         WHERE pf.flower_id = %s
-                        ORDER BY p.id
+                        ORDER BY p.is_bouquet DESC, p.id
                     """, [flower_id])
 
                     products = cursor.fetchall()
 
-            if not products:
-                with connection.cursor() as cursor:
-                    cursor.execute("""
-                        SELECT
-                            id,
-                            name,
-                            description,
-                            price,
-                            image,
-                            stock
-                        FROM products
-                        WHERE
-                            LOWER(name) LIKE LOWER(%s)
-                            OR LOWER(description) LIKE LOWER(%s)
-                        ORDER BY id
-                    """, [
-                        f'%{flower_name_ru}%',
-                        f'%{flower_name_ru}%'
-                    ])
+                if not products:
+                    no_products_message = 'Данного цветка нет в нашем магазине.'
 
-                    products = cursor.fetchall()
+            else:
+                result = {
+                    'flower_en': flower_name_en,
+                    'flower_ru': 'неизвестный цветок',
+                    'confidence': confidence,
+                    'info': 'Данного цветка нет в нашем магазине.'
+                }
+
+                no_products_message = 'Данного цветка нет в нашем магазине.'
 
     return render(request, 'shop/ai_recognition.html', {
         'result': result,
-        'products': products
+        'products': products,
+        'no_products_message': no_products_message
     })
