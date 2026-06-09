@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% block title %}Оформление заказа{% endblock %}
+
+{% block content %}
+
+<div class="form-wrapper">
+    <h2>Оформление заказа</h2>
+
+    <form method="post" class="custom-form">
+        {% csrf_token %}
+
+        <input type="text" name="customer_name" placeholder="Ваше имя" required>
+        <input type="text" name="phone" placeholder="Телефон" required>
+        <input type="text" name="address" placeholder="Адрес доставки" required>
+        <input type="text" name="comment" placeholder="Комментарий к заказу">
+
+        <button type="submit">Подтвердить заказ</button>
+    </form>
+</div>
+
+{% endblock %}

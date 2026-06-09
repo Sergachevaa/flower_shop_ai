@@ -32,11 +32,14 @@
     <p>
         <strong>Цветок:</strong>
         {{ result.flower_ru }}
+    </p>
+
+    <p>
         {{ result.info }}
     </p>
 
     <p>
-        <strong>Точность:</strong>
+        <strong>Точность распознавания:</strong>
         {{ result.confidence }}%
     </p>
 
@@ -56,44 +59,84 @@
 
         {% for product in products %}
 
-            <div class="product-card">
+        <div class="product-card">
 
-                <div class="product-image-wrap">
+            <div class="product-image-wrap">
 
-                    {% if product.4 %}
+                {% if product.4 %}
 
-                        {% if 'products/' in product.4 %}
-                            <img src="/media/{{ product.4 }}"
-                                 class="product-image">
-                        {% else %}
-                            <img src="{% static 'images/' %}{{ product.4 }}"
-                                 class="product-image">
-                        {% endif %}
-
+                    {% if 'products/' in product.4 %}
+                        <img src="/media/{{ product.4 }}"
+                             alt="{{ product.1 }}"
+                             class="product-image">
+                    {% else %}
+                        <img src="{% static 'images/' %}{{ product.4 }}"
+                             alt="{{ product.1 }}"
+                             class="product-image">
                     {% endif %}
 
-                </div>
-
-                <div class="product-body">
-
-                    <h3>{{ product.1 }}</h3>
-
-                    <p class="product-description">
-                        {{ product.2 }}
-                    </p>
-
-                    <p>
-                        <strong>Цена:</strong>
-                        {{ product.3 }} ₽
-                    </p>
-
-                </div>
+                {% endif %}
 
             </div>
+
+            <div class="product-body">
+
+                <span class="product-badge">
+                    {% if product.6 %}
+                        Букет
+                    {% else %}
+                        Поштучный цветок
+                    {% endif %}
+                </span>
+
+                <h3>{{ product.1 }}</h3>
+
+                <p class="product-description">
+                    {{ product.2 }}
+                </p>
+
+                <p>
+                    <strong>Цена:</strong>
+                    {{ product.3 }} ₽
+                </p>
+
+                <p>
+                    <strong>В наличии:</strong>
+                    {{ product.5 }}
+                </p>
+
+                <form method="post" action="/add-to-cart/">
+                    {% csrf_token %}
+                    <input type="hidden"
+                           name="product_id"
+                           value="{{ product.0 }}">
+
+                    <button type="submit" class="cart-btn">
+                        В корзину
+                    </button>
+                </form>
+
+            </div>
+
+        </div>
 
         {% endfor %}
 
     </div>
+
+</section>
+
+{% endif %}
+
+{% if no_products_message %}
+
+<section class="form-wrapper">
+
+    <h2>Информация</h2>
+
+    <p>
+        {{ no_products_message }}
+    </p>
 
 </section>
 
